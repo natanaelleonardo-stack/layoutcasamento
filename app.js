@@ -41,12 +41,17 @@
   let state = {
     guests: [],       // { id, name, table: string|null }
     extraTables: [],  // { id, label, capacity }
+    drawings: [],      // { id, type: 'wall'|'circle'|'rect'|'text', ...geometry }
     nextGuestId: 1,
     nextExtraId: 1,
+    nextDrawId: 1,
   };
 
   let selectedTableId = null;
   let searchTerm = '';
+  let selectedDrawId = null;
+  let drawMode = false;
+  let currentTool = 'select';
 
   function allTables() {
     return [...TABLES, ...state.extraTables];
@@ -267,6 +272,7 @@
     renderGuestList();
     renderStats();
     renderDetail();
+    renderDrawings();
     save();
   }
 
@@ -323,9 +329,10 @@
   }
 
   function resetAll() {
-    if (!confirm('Isso vai apagar todos os convidados e mesas externas. Deseja continuar?')) return;
-    state = { guests: [], extraTables: [], nextGuestId: 1, nextExtraId: 1 };
+    if (!confirm('Isso vai apagar todos os convidados, mesas externas e desenhos. Deseja continuar?')) return;
+    state = { guests: [], extraTables: [], drawings: [], nextGuestId: 1, nextExtraId: 1, nextDrawId: 1 };
     selectedTableId = null;
+    selectedDrawId = null;
     renderAll();
   }
 
@@ -460,7 +467,287 @@
   }
 
   /* ----------------------------------------------------------------
-     9. EVENTOS GLOBAIS
+     9. DESENHAR (paredes, círculo, retângulo, caixa de texto)
+  ---------------------------------------------------------------- */
+  const guestPanel = document.getElementById('guestPanel');
+  const drawPanel = document.getElementById('drawPanel');
+  const drawSvg = document.getElementById('drawSvg');
+  const drawTextLayer = document.getElementById('drawTextLayer');
+
+  function containerBox() {
+    return plantContainer.getBoundingClientRect();
+  }
+
+  // Converte coordenadas de tela (px) para % independente por eixo,
+  // o que permite que um círculo desenhado com raio igual em pixels
+  // continue parecendo um círculo mesmo com a imagem não sendo quadrada.
+  function pxToPct(clientX, clientY) {
+    const box = containerBox();
+    return {
+      xPct: ((clientX - box.left) / box.width) * 100,
+      yPct: ((clientY - box.top) / box.height) * 100,
+      w: box.width,
+      h: box.height,
+    };
+  }
+
+  function renderDrawings() {
+    drawSvg.innerHTML = '';
+    drawTextLayer.innerHTML = '';
+
+    state.drawings.forEach(d => {
+      if (d.type === 'text') {
+        const box = document.createElement('div');
+        box.className = 'draw-text-box' + (d.id === selectedDrawId ? ' selected' : '');
+        box.style.left = d.x + '%';
+        box.style.top = d.y + '%';
+        box.textContent = d.text || 'Texto';
+        box.dataset.drawId = d.id;
+        box.style.pointerEvents = drawMode ? 'auto' : 'none';
+        attachDrawInteraction(box, d);
+        drawTextLayer.appendChild(box);
+        return;
+      }
+
+      const ns = 'http://www.w3.org/2000/svg';
+      let el;
+      if (d.type === 'wall') {
+        el = document.createElementNS(ns, 'line');
+        el.setAttribute('x1', d.x1); el.setAttribute('y1', d.y1);
+        el.setAttribute('x2', d.x2); el.setAttribute('y2', d.y2);
+        el.setAttribute('class', 'draw-wall' + (d.id === selectedDrawId ? ' selected' : ''));
+      } else if (d.type === 'circle') {
+        el = document.createElementNS(ns, 'ellipse');
+        el.setAttribute('cx', d.cx); el.setAttribute('cy', d.cy);
+        el.setAttribute('rx', d.rx); el.setAttribute('ry', d.ry);
+        el.setAttribute('class', 'draw-shape' + (d.id === selectedDrawId ? ' selected' : ''));
+      } else if (d.type === 'rect') {
+        el = document.createElementNS(ns, 'rect');
+        el.setAttribute('x', d.x); el.setAttribute('y', d.y);
+        el.setAttribute('width', d.w); el.setAttribute('height', d.h);
+        el.setAttribute('rx', 2);
+        el.setAttribute('class', 'draw-shape' + (d.id === selectedDrawId ? ' selected' : ''));
+      }
+      if (el) {
+        el.dataset.drawId = d.id;
+        el.style.pointerEvents = drawMode ? 'auto' : 'none';
+        attachDrawInteraction(el, d);
+        drawSvg.appendChild(el);
+      }
+    });
+  }
+
+  function attachDrawInteraction(el, d) {
+    el.addEventListener('pointerdown', (e) => {
+      if (!drawMode || currentTool !== 'select') return;
+      e.stopPropagation();
+      selectDrawing(d.id);
+      startMoveDrawing(d, e);
+    });
+    if (d.type === 'text') {
+      el.addEventListener('dblclick', (e) => {
+        if (!drawMode) return;
+        e.stopPropagation();
+        editTextBox(el, d);
+      });
+    }
+  }
+
+  function selectDrawing(id) {
+    selectedDrawId = id;
+    renderDrawings();
+  }
+
+  function startMoveDrawing(d, downEvent) {
+    const start = pxToPct(downEvent.clientX, downEvent.clientY);
+    const orig = JSON.parse(JSON.stringify(d));
+
+    function onMove(e) {
+      const now = pxToPct(e.clientX, e.clientY);
+      const dx = now.xPct - start.xPct;
+      const dy = now.yPct - start.yPct;
+      if (d.type === 'wall') {
+        d.x1 = orig.x1 + dx; d.y1 = orig.y1 + dy;
+        d.x2 = orig.x2 + dx; d.y2 = orig.y2 + dy;
+      } else if (d.type === 'circle') {
+        d.cx = orig.cx + dx; d.cy = orig.cy + dy;
+      } else if (d.type === 'rect') {
+        d.x = orig.x + dx; d.y = orig.y + dy;
+      } else if (d.type === 'text') {
+        d.x = orig.x + dx; d.y = orig.y + dy;
+      }
+      renderDrawings();
+    }
+    function onUp() {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      save();
+    }
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  }
+
+  function editTextBox(el, d) {
+    el.contentEditable = 'true';
+    el.focus();
+    document.execCommand('selectAll', false, null);
+    function finish() {
+      el.contentEditable = 'false';
+      d.text = el.textContent.trim() || 'Texto';
+      el.removeEventListener('blur', finish);
+      renderDrawings();
+      save();
+    }
+    el.addEventListener('blur', finish);
+  }
+
+  function deleteSelectedDrawing() {
+    if (!selectedDrawId) {
+      showToast('Selecione um desenho na planta para apagar.');
+      return;
+    }
+    state.drawings = state.drawings.filter(d => d.id !== selectedDrawId);
+    selectedDrawId = null;
+    renderDrawings();
+    save();
+  }
+
+  function setTool(tool) {
+    currentTool = tool;
+    document.querySelectorAll('.draw-tool-btn[data-tool]').forEach(b => {
+      b.classList.toggle('active', b.dataset.tool === tool);
+    });
+    plantContainer.style.cursor = tool === 'select' ? 'default' : 'crosshair';
+  }
+
+  function enterDrawMode() {
+    drawMode = true;
+    guestPanel.hidden = true;
+    drawPanel.hidden = false;
+    plantContainer.classList.add('draw-mode');
+    drawSvg.style.pointerEvents = 'auto';
+    setTool('select');
+    renderDrawings();
+  }
+
+  function exitDrawMode() {
+    drawMode = false;
+    guestPanel.hidden = false;
+    drawPanel.hidden = true;
+    plantContainer.classList.remove('draw-mode');
+    plantContainer.style.cursor = 'default';
+    drawSvg.style.pointerEvents = 'none';
+    selectedDrawId = null;
+    renderDrawings();
+  }
+
+  // Desenhar com arrastar (parede / círculo / retângulo) e clicar (texto)
+  let dragStart = null;
+  let previewEl = null;
+
+  plantContainer.addEventListener('pointerdown', (e) => {
+    if (!drawMode || currentTool === 'select') return;
+    if (e.target.closest('.table')) return;
+
+    if (currentTool === 'text') {
+      const p = pxToPct(e.clientX, e.clientY);
+      const d = { id: 'draw' + (state.nextDrawId++), type: 'text', x: p.xPct, y: p.yPct, text: 'Texto' };
+      state.drawings.push(d);
+      renderDrawings();
+      save();
+      const el = drawTextLayer.querySelector(`[data-draw-id="${d.id}"]`);
+      if (el) editTextBox(el, d);
+      setTool('select');
+      return;
+    }
+
+    dragStart = pxToPct(e.clientX, e.clientY);
+    const ns = 'http://www.w3.org/2000/svg';
+    if (currentTool === 'wall') {
+      previewEl = document.createElementNS(ns, 'line');
+      previewEl.setAttribute('class', 'draw-wall');
+      previewEl.setAttribute('x1', dragStart.xPct);
+      previewEl.setAttribute('y1', dragStart.yPct);
+      previewEl.setAttribute('x2', dragStart.xPct);
+      previewEl.setAttribute('y2', dragStart.yPct);
+    } else if (currentTool === 'circle') {
+      previewEl = document.createElementNS(ns, 'ellipse');
+      previewEl.setAttribute('class', 'draw-shape');
+      previewEl.setAttribute('cx', dragStart.xPct);
+      previewEl.setAttribute('cy', dragStart.yPct);
+      previewEl.setAttribute('rx', 0);
+      previewEl.setAttribute('ry', 0);
+    } else if (currentTool === 'rect') {
+      previewEl = document.createElementNS(ns, 'rect');
+      previewEl.setAttribute('class', 'draw-shape');
+      previewEl.setAttribute('rx', 2);
+      previewEl.setAttribute('x', dragStart.xPct);
+      previewEl.setAttribute('y', dragStart.yPct);
+      previewEl.setAttribute('width', 0);
+      previewEl.setAttribute('height', 0);
+    }
+    if (previewEl) drawSvg.appendChild(previewEl);
+  });
+
+  plantContainer.addEventListener('pointermove', (e) => {
+    if (!dragStart || !previewEl) return;
+    const now = pxToPct(e.clientX, e.clientY);
+
+    if (currentTool === 'wall') {
+      previewEl.setAttribute('x2', now.xPct);
+      previewEl.setAttribute('y2', now.yPct);
+    } else if (currentTool === 'circle') {
+      const rPx = Math.hypot((now.xPct - dragStart.xPct) / 100 * now.w, (now.yPct - dragStart.yPct) / 100 * now.h);
+      previewEl.setAttribute('rx', (rPx / now.w) * 100);
+      previewEl.setAttribute('ry', (rPx / now.h) * 100);
+    } else if (currentTool === 'rect') {
+      const x = Math.min(dragStart.xPct, now.xPct);
+      const y = Math.min(dragStart.yPct, now.yPct);
+      previewEl.setAttribute('x', x);
+      previewEl.setAttribute('y', y);
+      previewEl.setAttribute('width', Math.abs(now.xPct - dragStart.xPct));
+      previewEl.setAttribute('height', Math.abs(now.yPct - dragStart.yPct));
+    }
+  });
+
+  plantContainer.addEventListener('pointerup', (e) => {
+    if (!dragStart || !previewEl) { dragStart = null; return; }
+    const now = pxToPct(e.clientX, e.clientY);
+    let d = null;
+
+    if (currentTool === 'wall') {
+      if (Math.hypot(now.xPct - dragStart.xPct, now.yPct - dragStart.yPct) > 0.5) {
+        d = { id: 'draw' + (state.nextDrawId++), type: 'wall', x1: dragStart.xPct, y1: dragStart.yPct, x2: now.xPct, y2: now.yPct };
+      }
+    } else if (currentTool === 'circle') {
+      const rPx = Math.hypot((now.xPct - dragStart.xPct) / 100 * now.w, (now.yPct - dragStart.yPct) / 100 * now.h);
+      if (rPx > 4) {
+        d = { id: 'draw' + (state.nextDrawId++), type: 'circle', cx: dragStart.xPct, cy: dragStart.yPct, rx: (rPx / now.w) * 100, ry: (rPx / now.h) * 100 };
+      }
+    } else if (currentTool === 'rect') {
+      const w = Math.abs(now.xPct - dragStart.xPct);
+      const h = Math.abs(now.yPct - dragStart.yPct);
+      if (w > 0.5 && h > 0.5) {
+        d = { id: 'draw' + (state.nextDrawId++), type: 'rect', x: Math.min(dragStart.xPct, now.xPct), y: Math.min(dragStart.yPct, now.yPct), w, h };
+      }
+    }
+
+    previewEl.remove();
+    previewEl = null;
+    dragStart = null;
+    if (d) { state.drawings.push(d); save(); }
+    renderDrawings();
+  });
+
+  // Clicar em área vazia da planta, em modo seleção, desmarca o desenho atual.
+  plantContainer.addEventListener('click', (e) => {
+    if (!drawMode || currentTool !== 'select') return;
+    if (e.target.closest('[data-draw-id]')) return;
+    if (selectedDrawId) { selectedDrawId = null; renderDrawings(); }
+  });
+
+  /* ----------------------------------------------------------------
+     10. EVENTOS GLOBAIS
   ---------------------------------------------------------------- */
   document.getElementById('fileInput').addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -506,6 +793,21 @@
   document.getElementById('exportJsonBtn').addEventListener('click', () => { exportJson(); closeMenu(); });
   document.getElementById('resetBtn').addEventListener('click', () => { resetAll(); closeMenu(); });
   document.getElementById('addTableBtn').addEventListener('click', addExtraTable);
+
+  document.getElementById('drawBtn').addEventListener('click', () => { enterDrawMode(); closeMenu(); });
+  document.getElementById('drawBackBtn').addEventListener('click', exitDrawMode);
+  document.getElementById('drawFinishBtn').addEventListener('click', exitDrawMode);
+  document.getElementById('deleteSelectedBtn').addEventListener('click', deleteSelectedDrawing);
+  document.querySelectorAll('.draw-tool-btn[data-tool]').forEach(btn => {
+    btn.addEventListener('click', () => setTool(btn.dataset.tool));
+  });
+  document.addEventListener('keydown', (e) => {
+    if (drawMode && (e.key === 'Delete' || e.key === 'Backspace') && selectedDrawId) {
+      const active = document.activeElement;
+      if (active && active.isContentEditable) return;
+      deleteSelectedDrawing();
+    }
+  });
   document.getElementById('detailClose').addEventListener('click', () => { selectedTableId = null; renderDetail(); });
   document.getElementById('removeTableBtn').addEventListener('click', () => {
     if (selectedTableId) removeExtraTable(selectedTableId);
@@ -527,7 +829,7 @@
   });
 
   /* ----------------------------------------------------------------
-     10. INIT
+     11. INIT
   ---------------------------------------------------------------- */
   load();
   renderAll();

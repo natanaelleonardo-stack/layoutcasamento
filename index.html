@@ -29,6 +29,8 @@
   <div class="topbar__actions">
     <button class="gear-btn" id="gearBtn" aria-label="Opções" aria-haspopup="true" aria-expanded="false">&#9881;</button>
     <div class="menu" id="optionsMenu">
+      <button id="drawBtn">Desenhar</button>
+      <hr>
       <button id="exportCsvBtn">Exportar .csv</button>
       <button id="exportJsonBtn">Exportar .json</button>
       <hr>
@@ -40,28 +42,69 @@
 <div class="app">
 
   <aside class="sidebar" id="sidebarDrop">
-    <div class="sidebar__section">
-      <h2>Convidados</h2>
-      <label class="upload">
-        <input type="file" id="fileInput" accept=".csv,.json,.txt" hidden>
-        <span>Importar lista (.csv, .json, .txt)</span>
-      </label>
+    <div id="guestPanel">
+      <div class="sidebar__section">
+        <h2>Convidados</h2>
+        <label class="upload">
+          <input type="file" id="fileInput" accept=".csv,.json,.txt" hidden>
+          <span>Importar lista (.csv, .json, .txt)</span>
+        </label>
 
-      <form class="add-guest" id="addGuestForm">
-        <input type="text" id="addGuestInput" placeholder="Adicionar convidado…" autocomplete="off">
-        <button type="submit" aria-label="Adicionar">+</button>
-      </form>
+        <form class="add-guest" id="addGuestForm">
+          <input type="text" id="addGuestInput" placeholder="Adicionar convidado…" autocomplete="off">
+          <button type="submit" aria-label="Adicionar">+</button>
+        </form>
 
-      <input type="search" id="searchInput" class="search" placeholder="Buscar convidado…">
+        <input type="search" id="searchInput" class="search" placeholder="Buscar convidado…">
+      </div>
+
+      <div class="sidebar__section sidebar__section--grow">
+        <div class="sidebar__list-header">
+          <span>Não alocados</span>
+          <span id="unallocatedCount">0</span>
+        </div>
+        <ul class="guest-list" id="guestList"></ul>
+        <p class="empty-hint" id="emptyHint">Importe sua lista de convidados para começar, ou arraste alguém de volta para cá para desalocar.</p>
+      </div>
     </div>
 
-    <div class="sidebar__section sidebar__section--grow">
-      <div class="sidebar__list-header">
-        <span>Não alocados</span>
-        <span id="unallocatedCount">0</span>
-      </div>
-      <ul class="guest-list" id="guestList"></ul>
-      <p class="empty-hint" id="emptyHint">Importe sua lista de convidados para começar, ou arraste alguém de volta para cá para desalocar.</p>
+    <div id="drawPanel" hidden>
+      <button class="sidebar-back" id="drawBackBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg>
+        Voltar para convidados
+      </button>
+      <h2>Desenhar</h2>
+
+      <button class="draw-tool-btn active" data-tool="select">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 3l6 16 2-7 7-2z"/></svg>
+        Selecionar / mover
+      </button>
+      <button class="draw-tool-btn" data-tool="wall">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4" y1="20" x2="20" y2="4"/></svg>
+        Parede (linha)
+      </button>
+      <button class="draw-tool-btn" data-tool="circle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/></svg>
+        Círculo
+      </button>
+      <button class="draw-tool-btn" data-tool="rect">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="6" width="16" height="12" rx="3"/></svg>
+        Retângulo
+      </button>
+      <button class="draw-tool-btn" data-tool="text">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h16M12 6v12"/></svg>
+        Caixa de texto
+      </button>
+
+      <div class="draw-sep"></div>
+
+      <button class="draw-tool-btn" id="deleteSelectedBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>
+        Apagar selecionado
+      </button>
+
+      <button class="draw-finish" id="drawFinishBtn">Concluir desenho</button>
+      <p class="detail-panel__hint">Parede/círculo/retângulo: clique e arraste na planta. Texto: clique uma vez e digite.</p>
     </div>
   </aside>
 
@@ -69,6 +112,8 @@
     <div class="plant-container">
       <div class="plant-inner" id="plantContainer">
         <img src="planta-baixa.jpg" alt="Planta baixa do salão" id="plantImg" draggable="false">
+        <svg id="drawSvg" class="draw-svg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+        <div id="drawTextLayer" class="draw-text-layer"></div>
         <!-- tables injected by JS -->
       </div>
     </div>

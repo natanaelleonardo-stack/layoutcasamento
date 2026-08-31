@@ -35,6 +35,19 @@ planta-baixa.jpg   imagem de fundo (a planta do salão)
    mapeamento final (nome do convidado + mesa atribuída).
 7. Os dados ficam salvos automaticamente no navegador (localStorage), então
    fechar a aba não perde o trabalho. "Limpar tudo" apaga tudo.
+8. **Desenhar** — no menu da engrenagem, clique em "Desenhar". O painel
+   esquerdo troca para as ferramentas: Selecionar/mover, Parede (linha),
+   Círculo, Retângulo e Caixa de texto.
+   - Parede/Círculo/Retângulo: escolha a ferramenta e clique-arraste na
+     planta.
+   - Caixa de texto: escolha a ferramenta, clique uma vez na planta e
+     digite (clique fora pra salvar, duplo clique depois pra editar de
+     novo).
+   - Selecionar/mover: clique num desenho pra marcá-lo (fica com brilho
+     branco) e arraste pra reposicionar; "Apagar selecionado" ou a tecla
+     Delete remove.
+   - "Voltar para convidados" ou "Concluir desenho" fecham o painel e
+     voltam pro modo normal. Os desenhos ficam salvos junto com o resto.
 
 ## Personalizar o cabeçalho
 
