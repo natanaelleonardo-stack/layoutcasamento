@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camilli &amp; Allan · Mapa de Mesas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__hero">
+    <span class="topbar__kicker">Mapa de mesas</span>
+    <h1 class="topbar__names">Camilli &amp; Allan</h1>
+    <div class="topbar__date">13 · 09 · 2026</div>
+    <div class="divider"><span>&#10022;</span></div>
+  </div>
+
+  <div class="topbar__stats" id="stats">
+    <div class="stat"><strong id="statTotal">0</strong><span>convidados</span></div>
+    <div class="stat"><strong id="statAlocados">0</strong><span>alocados</span></div>
+    <div class="stat"><strong id="statLivres">0</strong><span>não alocados</span></div>
+    <div class="stat"><strong id="statLugares">192</strong><span>lugares no salão</span></div>
+  </div>
+
+  <div class="topbar__actions">
+    <button class="gear-btn" id="gearBtn" aria-label="Opções" aria-haspopup="true" aria-expanded="false">&#9881;</button>
+    <div class="menu" id="optionsMenu">
+      <button id="exportCsvBtn">Exportar .csv</button>
+      <button id="exportJsonBtn">Exportar .json</button>
+      <hr>
+      <button id="resetBtn" class="menu__danger">Limpar tudo</button>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+
+  <aside class="sidebar" id="sidebarDrop">
+    <div class="sidebar__section">
+      <h2>Convidados</h2>
+      <label class="upload">
+        <input type="file" id="fileInput" accept=".csv,.json,.txt" hidden>
+        <span>Importar lista (.csv, .json, .txt)</span>
+      </label>
+
+      <form class="add-guest" id="addGuestForm">
+        <input type="text" id="addGuestInput" placeholder="Adicionar convidado…" autocomplete="off">
+        <button type="submit" aria-label="Adicionar">+</button>
+      </form>
+
+      <input type="search" id="searchInput" class="search" placeholder="Buscar convidado…">
+    </div>
+
+    <div class="sidebar__section sidebar__section--grow">
+      <div class="sidebar__list-header">
+        <span>Não alocados</span>
+        <span id="unallocatedCount">0</span>
+      </div>
+      <ul class="guest-list" id="guestList"></ul>
+      <p class="empty-hint" id="emptyHint">Importe sua lista de convidados para começar, ou arraste alguém de volta para cá para desalocar.</p>
+    </div>
+  </aside>
+
+  <main class="plant-area">
+    <div class="plant-container">
+      <div class="plant-inner" id="plantContainer">
+        <img src="planta-baixa.jpg" alt="Planta baixa do salão" id="plantImg" draggable="false">
+        <!-- tables injected by JS -->
+      </div>
+    </div>
+
+    <div class="extra-tables-bar">
+      <div class="extra-tables" id="extraTables"></div>
+      <button class="btn btn--outline" id="addTableBtn">+ Mesa externa</button>
+    </div>
+  </main>
+
+  <aside class="detail-panel" id="detailPanel">
+    <div class="detail-panel__header">
+      <h2 id="detailTitle">Mesa</h2>
+      <button class="detail-panel__close" id="detailClose" aria-label="Fechar">×</button>
+    </div>
+    <p class="detail-panel__capacity" id="detailCapacity"></p>
+    <ul class="detail-panel__list" id="detailList"></ul>
+    <p class="detail-panel__hint">Arraste um nome para fora, ou clique no × para desalocar.</p>
+    <button class="btn btn--outline detail-panel__remove-table" id="removeTableBtn" hidden>Remover esta mesa</button>
+  </aside>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
