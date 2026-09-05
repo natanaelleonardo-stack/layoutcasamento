@@ -65,6 +65,12 @@ planta-baixa.jpg   imagem de fundo (a planta do salão)
      Delete remove.
    - "Voltar para convidados" ou "Concluir desenho" fecham o painel e
      voltam pro modo normal. Os desenhos ficam salvos junto com o resto.
+11. **Ver quem senta onde** — passe o mouse sobre qualquer mesa com
+    convidados alocados: aparece um balão com o desenho da mesa e o
+    primeiro nome de cada convidado posicionado ao lado da cadeira
+    correspondente. É só uma visualização rápida — para gerenciar de
+    verdade (remover alguém, ver o nome completo), clique na mesa para
+    abrir o painel de detalhes, como já era antes.
 
 ## Personalizar o cabeçalho
 

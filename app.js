@@ -156,6 +156,47 @@
     document.addEventListener('pointerup', onUp);
   }
 
+  const seatPopupEl = document.getElementById('seatPopup');
+
+  function buildSeatPopupHTML(t, guests) {
+    const capacity = t.capacity;
+    let seatSpans = '';
+    guests.forEach((g, i) => {
+      const angle = (i / capacity) * Math.PI * 2 - Math.PI / 2;
+      const r = 42;
+      const x = 50 + r * Math.cos(angle);
+      const y = 50 + r * Math.sin(angle);
+      const firstName = g.name.trim().split(/\s+/)[0];
+      seatSpans += `<span class="seat-name" style="left:${x}%; top:${y}%">${escapeHtml(firstName)}</span>`;
+    });
+    return `
+      <div class="seat-popup__title">Mesa ${escapeHtml(t.label)} · ${guests.length}/${capacity}</div>
+      <div class="seat-popup__diagram">${buildTableSVG(capacity, guests.length)}${seatSpans}</div>
+    `;
+  }
+
+  function showSeatPopup(t, el) {
+    const guests = guestsOf(t.id).slice().sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    if (guests.length === 0) return;
+    seatPopupEl.innerHTML = buildSeatPopupHTML(t, guests);
+    seatPopupEl.classList.add('show');
+
+    const rect = el.getBoundingClientRect();
+    const popupRect = seatPopupEl.getBoundingClientRect();
+    let left = rect.right + 12;
+    if (left + popupRect.width > window.innerWidth - 8) left = rect.left - popupRect.width - 12;
+    left = Math.max(8, left);
+    let top = rect.top + rect.height / 2 - popupRect.height / 2;
+    top = Math.max(8, Math.min(top, window.innerHeight - popupRect.height - 8));
+
+    seatPopupEl.style.left = left + 'px';
+    seatPopupEl.style.top = top + 'px';
+  }
+
+  function hideSeatPopup() {
+    seatPopupEl.classList.remove('show');
+  }
+
   function buildTableSVG(capacity, occupied) {
     const size = 100, cx = 50, cy = 50;
     const tableR = capacity > 10 ? 24 : 20;
@@ -205,10 +246,14 @@
     if (!isExtra) {
       el.addEventListener('pointerdown', (e) => {
         if (drawMode) return;
+        hideSeatPopup();
         e.stopPropagation();
         startMoveTable(t, e, el);
       });
     }
+
+    el.addEventListener('mouseenter', () => { if (!drawMode) showSeatPopup(t, el); });
+    el.addEventListener('mouseleave', hideSeatPopup);
 
     el.addEventListener('click', () => {
       if (suppressNextClick) { suppressNextClick = false; return; }
@@ -694,6 +739,7 @@
 
   function enterDrawMode() {
     drawMode = true;
+    hideSeatPopup();
     guestPanel.hidden = true;
     drawPanel.hidden = false;
     plantContainer.classList.add('draw-mode');
