@@ -35,7 +35,24 @@ planta-baixa.jpg   imagem de fundo (a planta do salão)
    mapeamento final (nome do convidado + mesa atribuída).
 7. Os dados ficam salvos automaticamente no navegador (localStorage), então
    fechar a aba não perde o trabalho. "Limpar tudo" apaga tudo.
-8. **Desenhar** — no menu da engrenagem, clique em "Desenhar". O painel
+8. **Mover mesas** — clique e arraste qualquer mesa do salão principal
+   (não vale para "mesas externas") direto na planta para reposicioná-la.
+   A nova posição fica salva no navegador (localStorage) na hora.
+9. **Salvar posições** — no menu da engrenagem, clique em "Salvar
+   posições". Isso baixa um arquivo `mesas-posicoes.txt` com um bloco de
+   código já pronto. Abra o arquivo, copie o conteúdo e cole no lugar do
+   array `TABLES` no início do `app.js` (veja a seção "Trocar a planta
+   baixa" abaixo para saber exatamente onde fica). Depois é só subir o
+   `app.js` atualizado pro GitHub (`git push` ou reenviar pela interface
+   web) — assim a posição nova vale pra todo mundo que abrir o site, não
+   só no seu navegador.
+   > Esse fluxo é manual de propósito: o site é 100% estático (GitHub
+   > Pages), então salvar de verdade no repositório sem um passo manual
+   > exigiria guardar uma credencial do GitHub dentro do código do
+   > site — e qualquer visitante conseguiria ver essa credencial e
+   > editar seu repositório. Por isso a forma seguindo é exportar e
+   > você mesmo colar/subir.
+10. **Desenhar** — no menu da engrenagem, clique em "Desenhar". O painel
    esquerdo troca para as ferramentas: Selecionar/mover, Parede (linha),
    Círculo, Retângulo e Caixa de texto.
    - Parede/Círculo/Retângulo: escolha a ferramenta e clique-arraste na

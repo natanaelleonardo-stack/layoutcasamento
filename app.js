@@ -42,6 +42,7 @@
     guests: [],       // { id, name, table: string|null }
     extraTables: [],  // { id, label, capacity }
     drawings: [],      // { id, type: 'wall'|'circle'|'rect'|'text', ...geometry }
+    positions: {},     // { tableId: { x, y } } — sobrescreve a posição padrão das mesas
     nextGuestId: 1,
     nextExtraId: 1,
     nextDrawId: 1,
@@ -116,6 +117,45 @@
 
   // Desenha a mesa com as cadeiras ao redor (quantidade = capacidade).
   // Cadeiras douradas preenchidas = lugar ocupado; contorno apagado = livre.
+  // Arrastar a própria mesa para reposicioná-la na planta.
+  function startMoveTable(t, downEvent, el) {
+    const startClientX = downEvent.clientX;
+    const startClientY = downEvent.clientY;
+    let moved = false;
+    const box = plantContainer.getBoundingClientRect();
+    const startXPct = ((startClientX - box.left) / box.width) * 100;
+    const startYPct = ((startClientY - box.top) / box.height) * 100;
+    const current = state.positions[t.id];
+    const origX = current ? current.x : t.x;
+    const origY = current ? current.y : t.y;
+    let pendingX = origX, pendingY = origY;
+
+    function onMove(e) {
+      const dx = e.clientX - startClientX;
+      const dy = e.clientY - startClientY;
+      if (!moved && Math.hypot(dx, dy) > 4) moved = true;
+      if (!moved) return;
+      const box2 = plantContainer.getBoundingClientRect();
+      const nowXPct = ((e.clientX - box2.left) / box2.width) * 100;
+      const nowYPct = ((e.clientY - box2.top) / box2.height) * 100;
+      pendingX = origX + (nowXPct - startXPct);
+      pendingY = origY + (nowYPct - startYPct);
+      el.style.left = pendingX + '%';
+      el.style.top = pendingY + '%';
+    }
+    function onUp() {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      if (moved) {
+        state.positions[t.id] = { x: pendingX, y: pendingY };
+        suppressNextClick = true;
+        save();
+      }
+    }
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  }
+
   function buildTableSVG(capacity, occupied) {
     const size = 100, cx = 50, cy = 50;
     const tableR = capacity > 10 ? 24 : 20;
@@ -140,13 +180,16 @@
     </svg>`;
   }
 
+  let suppressNextClick = false;
+
   function buildTableEl(t, isExtra) {
     const el = document.createElement('div');
     el.className = 'table' + (t.wide ? ' table--wide' : '') + (isExtra ? ' extra-table' : '');
     el.dataset.tableId = t.id;
     if (!isExtra) {
-      el.style.left = t.x + '%';
-      el.style.top = t.y + '%';
+      const pos = state.positions[t.id];
+      el.style.left = (pos ? pos.x : t.x) + '%';
+      el.style.top = (pos ? pos.y : t.y) + '%';
     }
 
     const count = guestsOf(t.id).length;
@@ -157,9 +200,20 @@
     el.classList.toggle('has-guests', count > 0);
     el.classList.toggle('is-full', count >= t.capacity);
     el.classList.toggle('selected', t.id === selectedTableId);
-    el.title = `Mesa ${t.label} — ${count}/${t.capacity} lugares`;
+    el.title = `Mesa ${t.label} — ${count}/${t.capacity} lugares` + (isExtra ? '' : ' · arraste para mover');
 
-    el.addEventListener('click', () => openDetail(t.id));
+    if (!isExtra) {
+      el.addEventListener('pointerdown', (e) => {
+        if (drawMode) return;
+        e.stopPropagation();
+        startMoveTable(t, e, el);
+      });
+    }
+
+    el.addEventListener('click', () => {
+      if (suppressNextClick) { suppressNextClick = false; return; }
+      openDetail(t.id);
+    });
     el.addEventListener('dblclick', (e) => {
       e.stopPropagation();
       const val = prompt(`Capacidade da mesa "${t.label}":`, t.capacity);
@@ -329,8 +383,8 @@
   }
 
   function resetAll() {
-    if (!confirm('Isso vai apagar todos os convidados, mesas externas e desenhos. Deseja continuar?')) return;
-    state = { guests: [], extraTables: [], drawings: [], nextGuestId: 1, nextExtraId: 1, nextDrawId: 1 };
+    if (!confirm('Isso vai apagar todos os convidados, mesas externas, desenhos e posições movidas. Deseja continuar?')) return;
+    state = { guests: [], extraTables: [], drawings: [], positions: {}, nextGuestId: 1, nextExtraId: 1, nextDrawId: 1 };
     selectedTableId = null;
     selectedDrawId = null;
     renderAll();
@@ -400,6 +454,24 @@
   /* ----------------------------------------------------------------
      7. EXPORTAÇÃO
   ---------------------------------------------------------------- */
+  function exportPositions() {
+    const round = (n) => Math.round(n * 100) / 100;
+    const lines = TABLES.map(t => {
+      const pos = state.positions[t.id];
+      const x = pos ? round(pos.x) : t.x;
+      const y = pos ? round(pos.y) : t.y;
+      const parts = [`id: '${t.id}'`, `label: '${t.label.replace(/'/g, "\\'")}'`, `capacity: ${t.capacity}`, `x: ${x}`, `y: ${y}`];
+      if (t.wide) parts.push('wide: true');
+      return `    { ${parts.join(', ')} },`;
+    });
+    const code =
+      '// Cole este bloco no lugar do array TABLES no início do app.js\n' +
+      '// (substitui as posições antigas pelas que você acabou de arrastar)\n' +
+      'const TABLES = [\n' + lines.join('\n') + '\n  ];\n';
+    downloadFile(code, 'mesas-posicoes.txt', 'text/plain;charset=utf-8');
+    showToast('Baixado! Abra o arquivo e cole substituindo o array TABLES em app.js.');
+  }
+
   function tableLabelFor(guest) {
     if (!guest.table) return 'Não alocado';
     const t = findTable(guest.table);
@@ -795,6 +867,7 @@
   document.getElementById('addTableBtn').addEventListener('click', addExtraTable);
 
   document.getElementById('drawBtn').addEventListener('click', () => { enterDrawMode(); closeMenu(); });
+  document.getElementById('savePositionsBtn').addEventListener('click', () => { exportPositions(); closeMenu(); });
   document.getElementById('drawBackBtn').addEventListener('click', exitDrawMode);
   document.getElementById('drawFinishBtn').addEventListener('click', exitDrawMode);
   document.getElementById('deleteSelectedBtn').addEventListener('click', deleteSelectedDrawing);
