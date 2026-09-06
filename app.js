@@ -482,6 +482,17 @@
     renderAll();
   }
 
+  function deleteAllGuests() {
+    if (state.guests.length === 0) {
+      showToast('Não há convidados para excluir.');
+      return;
+    }
+    if (!confirm(`Isso vai excluir todos os ${state.guests.length} convidados da lista (mesas, desenhos e posições continuam como estão). Deseja continuar?`)) return;
+    state.guests = [];
+    renderAll();
+    showToast('Todos os convidados foram excluídos.');
+  }
+
   /* ----------------------------------------------------------------
      6. IMPORTAÇÃO
   ---------------------------------------------------------------- */
@@ -971,6 +982,7 @@
   document.getElementById('exportCsvBtn').addEventListener('click', () => { exportCsv(); closeMenu(); });
   document.getElementById('exportJsonBtn').addEventListener('click', () => { exportJson(); closeMenu(); });
   document.getElementById('resetBtn').addEventListener('click', () => { resetAll(); closeMenu(); });
+  document.getElementById('deleteAllGuestsBtn').addEventListener('click', () => { deleteAllGuests(); closeMenu(); });
   document.getElementById('addTableBtn').addEventListener('click', addExtraTable);
 
   document.getElementById('drawBtn').addEventListener('click', () => { enterDrawMode(); closeMenu(); });

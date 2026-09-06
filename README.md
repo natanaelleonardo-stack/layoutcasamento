@@ -81,6 +81,10 @@ planta-baixa.jpg   imagem de fundo (a planta do salão)
     todos os convidados com a mesa de cada um (ou "Não alocado"). Tem
     um botão "Imprimir" que gera uma versão limpa, só com a lista,
     pronta para imprimir ou salvar como PDF pelo próprio navegador.
+14. **Excluir todos os convidados** — no menu da engrenagem, apaga só
+    a lista de convidados (pede confirmação antes). Diferente do
+    "Limpar tudo", as mesas externas, os desenhos e as posições que
+    você já ajustou continuam intactos.
 
 ## Personalizar o cabeçalho
 
