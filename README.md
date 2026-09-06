@@ -71,6 +71,16 @@ planta-baixa.jpg   imagem de fundo (a planta do salão)
     correspondente. É só uma visualização rápida — para gerenciar de
     verdade (remover alguém, ver o nome completo), clique na mesa para
     abrir o painel de detalhes, como já era antes.
+12. **Editar ou excluir um convidado** — em qualquer card de convidado
+    (painel lateral ou dentro do painel de detalhes da mesa), use o
+    ícone de lápis para corrigir o nome, ou o ícone de lixeira para
+    excluir o convidado de vez (com confirmação). Isso é diferente do
+    "×", que só tira o convidado da mesa sem apagar ele da lista.
+13. **Lista completa** — no menu da engrenagem, clique em "Lista
+    completa" para abrir, dentro do próprio app, a lista alfabética de
+    todos os convidados com a mesa de cada um (ou "Não alocado"). Tem
+    um botão "Imprimir" que gera uma versão limpa, só com a lista,
+    pronta para imprimir ou salvar como PDF pelo próprio navegador.
 
 ## Personalizar o cabeçalho
 

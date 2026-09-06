@@ -32,6 +32,7 @@
       <button id="drawBtn">Desenhar</button>
       <button id="savePositionsBtn">Salvar posições</button>
       <hr>
+      <button id="guestListBtn">Lista completa</button>
       <button id="exportCsvBtn">Exportar .csv</button>
       <button id="exportJsonBtn">Exportar .json</button>
       <hr>
@@ -140,6 +141,19 @@
 
 <div class="toast" id="toast"></div>
 <div class="seat-popup" id="seatPopup"></div>
+
+<div class="modal-overlay" id="guestListModal" hidden>
+  <div class="modal">
+    <div class="modal__header">
+      <h2>Lista completa</h2>
+      <button class="detail-panel__close" id="guestListModalClose" aria-label="Fechar">×</button>
+    </div>
+    <div class="modal__actions">
+      <button class="btn btn--outline" id="printGuestListBtn">Imprimir</button>
+    </div>
+    <div class="modal__body" id="guestListModalBody"></div>
+  </div>
+</div>
 
 <script src="app.js"></script>
 </body>

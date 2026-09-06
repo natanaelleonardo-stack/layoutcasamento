@@ -307,12 +307,27 @@
     li.innerHTML = `
       <span class="guest-chip__avatar">${escapeHtml(initials(guest.name))}</span>
       <span class="guest-chip__name">${escapeHtml(guest.name)}</span>
+      <button class="guest-chip__icon-btn" data-action="edit" aria-label="Editar nome" title="Editar nome">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+      </button>
+      <button class="guest-chip__icon-btn danger" data-action="delete" aria-label="Excluir convidado" title="Excluir convidado">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>
+      </button>
     `;
     li.addEventListener('dragstart', (e) => {
       e.dataTransfer.setData('text/plain', guest.id);
       li.classList.add('dragging');
     });
     li.addEventListener('dragend', () => li.classList.remove('dragging'));
+    li.querySelector('[data-action="edit"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const val = prompt('Editar nome do convidado:', guest.name);
+      if (val && val.trim()) renameGuest(guest.id, val);
+    });
+    li.querySelector('[data-action="delete"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteGuest(guest.id);
+    });
     return li;
   }
 
@@ -350,6 +365,12 @@
         li.innerHTML = `
           <span class="guest-chip__avatar">${escapeHtml(initials(g.name))}</span>
           <span class="guest-chip__name">${escapeHtml(g.name)}</span>
+          <button class="guest-chip__icon-btn" data-action="edit" aria-label="Editar nome" title="Editar nome">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+          </button>
+          <button class="guest-chip__icon-btn danger" data-action="delete" aria-label="Excluir convidado" title="Excluir convidado">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>
+          </button>
           <button class="guest-chip__remove" aria-label="Desalocar">×</button>
         `;
         li.addEventListener('dragstart', (e) => {
@@ -357,6 +378,15 @@
           li.classList.add('dragging');
         });
         li.addEventListener('dragend', () => li.classList.remove('dragging'));
+        li.querySelector('[data-action="edit"]').addEventListener('click', (e) => {
+          e.stopPropagation();
+          const val = prompt('Editar nome do convidado:', g.name);
+          if (val && val.trim()) renameGuest(g.id, val);
+        });
+        li.querySelector('[data-action="delete"]').addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteGuest(g.id);
+        });
         li.querySelector('.guest-chip__remove').addEventListener('click', () => {
           assignGuest(g.id, null);
         });
@@ -408,6 +438,23 @@
     const trimmed = name.trim();
     if (!trimmed) return;
     state.guests.push({ id: 'g' + (state.nextGuestId++), name: trimmed, table: null });
+  }
+
+  function renameGuest(id, newName) {
+    const guest = state.guests.find(g => g.id === id);
+    if (!guest) return;
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    guest.name = trimmed;
+    renderAll();
+  }
+
+  function deleteGuest(id) {
+    const guest = state.guests.find(g => g.id === id);
+    if (!guest) return;
+    if (!confirm(`Excluir "${guest.name}" definitivamente da lista?`)) return;
+    state.guests = state.guests.filter(g => g.id !== id);
+    renderAll();
   }
 
   function addExtraTable() {
@@ -521,6 +568,20 @@
     if (!guest.table) return 'Não alocado';
     const t = findTable(guest.table);
     return t ? `Mesa ${t.label}` : 'Não alocado';
+  }
+
+  function openGuestListModal() {
+    const rows = state.guests
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+      .map(g => `<div class="modal-guest-row"><span>${escapeHtml(g.name)}</span><span class="table-tag">${escapeHtml(tableLabelFor(g))}</span></div>`)
+      .join('');
+    document.getElementById('guestListModalBody').innerHTML = rows || '<p>Nenhum convidado ainda.</p>';
+    document.getElementById('guestListModal').hidden = false;
+  }
+
+  function closeGuestListModal() {
+    document.getElementById('guestListModal').hidden = true;
   }
 
   function exportCsv() {
@@ -914,6 +975,12 @@
 
   document.getElementById('drawBtn').addEventListener('click', () => { enterDrawMode(); closeMenu(); });
   document.getElementById('savePositionsBtn').addEventListener('click', () => { exportPositions(); closeMenu(); });
+  document.getElementById('guestListBtn').addEventListener('click', () => { openGuestListModal(); closeMenu(); });
+  document.getElementById('guestListModalClose').addEventListener('click', closeGuestListModal);
+  document.getElementById('printGuestListBtn').addEventListener('click', () => window.print());
+  document.getElementById('guestListModal').addEventListener('click', (e) => {
+    if (e.target.id === 'guestListModal') closeGuestListModal();
+  });
   document.getElementById('drawBackBtn').addEventListener('click', exitDrawMode);
   document.getElementById('drawFinishBtn').addEventListener('click', exitDrawMode);
   document.getElementById('deleteSelectedBtn').addEventListener('click', deleteSelectedDrawing);

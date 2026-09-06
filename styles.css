@@ -388,6 +388,95 @@ button, input {
 }
 .guest-chip__remove:hover { color: var(--wine-light); }
 
+.guest-chip__icon-btn {
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.guest-chip__icon-btn svg { width: 13px; height: 13px; }
+.guest-chip__icon-btn:hover { color: var(--gold-light); }
+.guest-chip__icon-btn.danger:hover { color: var(--wine-light); }
+
+/* ---------- Modal (Lista completa) ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay[hidden] { display: none; }
+
+.modal {
+  background: var(--paper);
+  border: 1px solid var(--gold-dim);
+  border-radius: 8px;
+  padding: 22px;
+  width: 420px;
+  max-width: 100%;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow);
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.modal__header h2 { font-size: 20px; font-style: italic; }
+
+.modal__actions { margin-bottom: 12px; }
+
+.modal__body {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 100px;
+}
+
+.modal-guest-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 2px;
+  border-bottom: 1px solid var(--gold-hairline);
+  font-size: 13.5px;
+}
+.modal-guest-row .table-tag {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  color: var(--gold-light);
+  white-space: nowrap;
+}
+
+@media print {
+  body * { visibility: hidden; }
+  #guestListModal, #guestListModal * { visibility: visible; }
+  #guestListModal {
+    position: absolute; inset: 0; background: #fff; padding: 24px; display: block;
+  }
+  .modal {
+    box-shadow: none; border: none; width: 100%; max-height: none; background: #fff; color: #000;
+  }
+  .modal__actions, #guestListModalClose { display: none; }
+  .modal__header h2 { color: #000; }
+  .modal-guest-row { color: #000; border-bottom: 1px solid #ccc; }
+  .modal-guest-row .table-tag { color: #000; }
+}
+
 /* ---------- Plant area ---------- */
 
 .plant-area {
